@@ -1,4 +1,4 @@
-name: 小米9 KSU
+name: 红米K20P KSU
 on:
 
   workflow_dispatch:
