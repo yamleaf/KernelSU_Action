@@ -253,7 +253,7 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         sed -i "s/CONFIG_CC_STACKPROTECTOR_STRONG=y/# CONFIG_CC_STACKPROTECTOR_STRONG is not set/g" arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
-        sed -i "s/-regalloc-enable-advisor/--polly-enable-mse/g" ./Makefile
+        sed -i "s/-regalloc-enable-advisor=release/--polly-enable-mse=1/g" ./Makefile
         if [ ${{ env.ADD_KPROBES_CONFIG }} = true ]; then
             echo "CONFIG_MODULES=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
             echo "CONFIG_KPROBES=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
