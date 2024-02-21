@@ -203,7 +203,14 @@ jobs:
       if: env.ENABLE_KERNELSU == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-        make -j$(nproc --all) O=out
+        if [ ! -d out/arch/${{ env.ARCH }}/boot/dts ]; then
+            mkdir -p arch/${{ env.ARCH }}/boot/dts
+        fi
+
+        if [ ! -f out/.config ]; then
+            cp -rf arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }} out/.config
+        fi
+        make O=out clean
 
     - name: Build kernel
       run: |
