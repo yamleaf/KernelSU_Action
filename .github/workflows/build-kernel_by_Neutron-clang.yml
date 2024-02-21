@@ -61,7 +61,6 @@ jobs:
         echo "NEUTRON_CLANG_VERSION=$(cat $CONFIG_ENV | grep -w "NEUTRON_CLANG_VERSION" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
         echo "ENABLE_CLIBC_PATCH=$(cat $CONFIG_ENV | grep -w "ENABLE_CLIBC_PATCH" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
 
-
     - name: Set swap to 10G
       uses: pierotofy/set-swap-space@master
       with:
@@ -135,6 +134,8 @@ jobs:
             cd ${{ env.KSU_EXPECTED_PATH }}
             git pull origin ${{ env.KERNELSU_TAG }}
             cd -
+            sed -i '/CONFIG_KSU/d' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+           echo "CONFIG_KSU=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         else
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s ${{ env.KERNELSU_TAG }}
         fi
