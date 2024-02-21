@@ -1,4 +1,4 @@
-name: RikkaV2Kernel by LLVM clang
+name: rikkakernel-v2-rapheal-LLVM-clang
 on:
   watch:
     types: [started]
@@ -237,18 +237,22 @@ jobs:
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         if [ ${{ env.KSU_EXPECTED_MANU }} = true ]; then
             git submodule init && git submodule update
-            cd ${{ env.KSU_EXPECTED_PATH }}
-            git pull origin ${{ env.KERNELSU_TAG }}
-            cd -
-            sed -i '/CONFIG_KSU/d' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
-            echo "CONFIG_KSU=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            cd ${{ env.KSU_EXPECTED_PATH }} && git pull origin ${{ env.KERNELSU_TAG }}
+            KSU_VERSION=$(expr $(git rev-list --count HEAD) + 10200)
+            sed -i '/CONFIG_KSU/d' $GITHUB_WORKSPACE/kernel_workspace/android-kernel/arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU=y" >> $GITHUB_WORKSPACE/kernel_workspace/android-kernel/arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         else
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s ${{ env.KERNELSU_TAG }}
+            KSU_VERSION=$(cd KernelSU && expr $(git rev-list --count HEAD) + 10200)
         fi
+        cd -
+        echo "-- KernelSU version: $KSU_VERSION"
+        echo "KSUVER=-KSU$KSU_VERSION" >> $GITHUB_ENV
 
     - name: Setup Configuration for Kernel
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+        sed -i "s/CONFIG_CC_STACKPROTECTOR_STRONG=y/# CONFIG_CC_STACKPROTECTOR_STRONG is not set/g" arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         if [ ${{ env.ADD_KPROBES_CONFIG }} = true ]; then
             echo "CONFIG_MODULES=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
             echo "CONFIG_KPROBES=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
@@ -267,8 +271,6 @@ jobs:
         if [ ${{ env.DISABLE_CC_WERROR }} = true ]; then
             echo "CONFIG_CC_WERROR=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         fi
-        sed -i '/CONFIG_CC_STACKPROTECTOR_STRONG/d' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
-        echo "# CONFIG_CC_STACKPROTECTOR_STRONG is not set" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         
     - name: Setup LXC
       if: env.ENABLE_LXC == 'true'
@@ -305,19 +307,6 @@ jobs:
       with:
         key: build-kernel-${{ env.DEVICE }}${{ env.UPLOADNAME }}
         max-size: 2G
-
-    - name: KernelSu Version
-      if: env.ENABLE_KERNELSU == 'true'
-      run: |
-        cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-        if [ ! -d out/arch/${{ env.ARCH }}/boot/dts ]; then
-            mkdir -p out/arch/${{ env.ARCH }}/boot/dts
-        fi
-
-        if [ ! -f out/.config ]; then
-            cp -rf arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }} out/.config
-        fi
-        make O=out clean
 
     - name: Build kernel
       run: |
@@ -394,7 +383,7 @@ jobs:
       if: env.CHECK_FILE_IS_OK == 'true'
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.ANY_KERNEL_NAME }}-${{ env.DEVICE }}-${{ env.BUILD_TIME }}
+        name: ${{ env.ANY_KERNEL_NAME }}-${{ env.DEVICE }}-${{ env.BUILD_TIME }}${{ env.KSUVER }}
         path: kernel_workspace/AnyKernel3/*
         compression-level: 9
 
