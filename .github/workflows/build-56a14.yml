@@ -146,6 +146,8 @@ jobs:
     - name: Setup Configuration for Kernel
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+         sed -i "s/struct class *get_xiaomi_touch_class()/struct class *get_xiaomi_touch_class(void)/g" drivers/input/touchscreen/xiaomi/xiaomi_touch.c
+         sed -i "s/struct device *get_xiaomi_touch_dev()/struct device *get_xiaomi_touch_dev(void)/g" drivers/input/touchscreen/xiaomi/xiaomi_touch.c
         if [ ${{ env.ADD_KPROBES_CONFIG }} = true ]; then
             echo "CONFIG_MODULES=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
             echo "CONFIG_KPROBES=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
