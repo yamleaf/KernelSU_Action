@@ -117,8 +117,8 @@ jobs:
             git submodule init && git submodule update
             cd ${{ env.KSU_EXPECTED_PATH }} && git pull origin ${{ env.KERNELSU_TAG }}
             KSU_VERSION=$(expr $(git rev-list --count HEAD) + 10200)
-            sed -i '/CONFIG_KSU/d' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
-            echo "CONFIG_KSU=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            sed -i '/CONFIG_KSU/d' $GITHUB_WORKSPACE/kernel_workspace/android-kernel/arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU=y" >> $GITHUB_WORKSPACE/kernel_workspace/android-kernel/arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         else
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s ${{ env.KERNELSU_TAG }}
             KSU_VERSION=$(cd KernelSU && expr $(git rev-list --count HEAD) + 10200)
