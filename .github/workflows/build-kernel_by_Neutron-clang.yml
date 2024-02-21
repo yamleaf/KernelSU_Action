@@ -135,7 +135,7 @@ jobs:
             git pull origin ${{ env.KERNELSU_TAG }}
             cd -
             sed -i '/CONFIG_KSU/d' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
-           echo "CONFIG_KSU=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         else
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s ${{ env.KERNELSU_TAG }}
         fi
@@ -198,7 +198,7 @@ jobs:
         key: build-kernel-${{ env.DEVICE }}${{ env.UPLOADNAME }}
         max-size: 2G
 
-    - name: Get KernelSu Version
+    - name: KernelSu Version
       if: env.ENABLE_KERNELSU == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
