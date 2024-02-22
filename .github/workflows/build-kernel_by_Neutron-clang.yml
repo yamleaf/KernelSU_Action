@@ -15,7 +15,7 @@ jobs:
       CCACHE_NOHASHDIR: "true"
       CCACHE_HARDLINK: "true"
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Prepare Configuration
       run: |
         CONFIG_ENV=$(cat config1.env | grep -w "CONFIG_ENV" | head -n 1 | cut -d "=" -f 2)
@@ -56,6 +56,7 @@ jobs:
         echo "KSU_EXPECTED_MANU=$(cat $CONFIG_ENV | grep -w "KSU_EXPECTED_MANU" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
         echo "KSU_EXPECTED_PATH=$(cat $CONFIG_ENV | grep -w "KSU_EXPECTED_PATH" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
         echo "ANY_KERNEL_NAME=$(cat $CONFIG_ENV | grep -w "ANY_KERNEL_NAME" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
+        echo "ANY_KERNEL_PATH=$(cat $CONFIG_ENV | grep -w "ANY_KERNEL_PATH" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
         echo "ENABLE_LXC=$(cat $CONFIG_ENV | grep -w "ENABLE_LXC" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
         echo "TCLANG_BRANCH=$(cat $CONFIG_ENV | grep -w "TCLANG_BRANCH" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
         echo "NEUTRON_CLANG_VERSION=$(cat $CONFIG_ENV | grep -w "NEUTRON_CLANG_VERSION" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
@@ -130,9 +131,8 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         if [ ${{ env.KSU_EXPECTED_MANU }} = true ]; then
-            git submodule init && git submodule update
-            cd ${{ env.KSU_EXPECTED_PATH }} && git pull origin ${{ env.KERNELSU_TAG }}
-            KSU_VERSION=$(expr $(git rev-list --count HEAD) + 10200)
+            git submodule init && git submodule update --remote --merge
+            KSU_VERSION=$(cd ${{ env.KSU_EXPECTED_PATH }} && expr $(git rev-list --count HEAD) + 10200)
             sed -i '/CONFIG_KSU/d' $GITHUB_WORKSPACE/kernel_workspace/android-kernel/arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
             echo "CONFIG_KSU=y" >> $GITHUB_WORKSPACE/kernel_workspace/android-kernel/arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         else
@@ -241,10 +241,19 @@ jobs:
       if: env.CHECK_FILE_IS_OK == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace
-        git clone https://github.com/osm0sis/AnyKernel3
-        sed -i 's/do.devicecheck=1/do.devicecheck=0/g' AnyKernel3/anykernel.sh
-        sed -i 's!block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot;!block=auto;!g' AnyKernel3/anykernel.sh
-        sed -i 's/is_slot_device=0;/is_slot_device=auto;/g' AnyKernel3/anykernel.sh
+        if [ -n "${{ env.ANY_KERNEL_PATH }}" ] && [ -d "android-kernel/${{ env.ANY_KERNEL_PATH }}" ]; then
+          mkdir -p AnyKernel3
+          cp -rf android-kernel/${{ env.ANY_KERNEL_PATH }}/*  AnyKernel3/
+          sed -i '/kernel.string=/d' AnyKernel3/anykernel.sh
+          sed -i 's/kernel.string=rikka/do.devicecheck=0/g' AnyKernel3/anykernel.sh
+          sed -i "/^properties()/a kernel.string=${{ env.ANY_KERNEL_NAME }} by ${{ github.actor }}" AnyKernel3/anykernel.sh
+          echo "Use Local Anykernel3 dir"
+        else
+          git clone https://github.com/osm0sis/AnyKernel3
+          sed -i 's/do.devicecheck=1/do.devicecheck=0/g' AnyKernel3/anykernel.sh
+          sed -i 's!block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot;!block=auto;!g' AnyKernel3/anykernel.sh
+          sed -i 's/is_slot_device=0;/is_slot_device=auto;/g' AnyKernel3/anykernel.sh
+        fi
         cp android-kernel/out/arch/${{ env.ARCH }}/boot/${{ env.KERNEL_IMAGE_NAME }} AnyKernel3/
         if [ ${{ env.CHECK_DTBO_IS_OK }} = true ]; then
             cp android-kernel/out/arch/${{ env.ARCH }}/boot/dtbo.img AnyKernel3/
